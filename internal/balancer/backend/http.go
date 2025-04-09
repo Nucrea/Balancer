@@ -9,10 +9,16 @@ import (
 )
 
 func NewHttpBackend(addr string) Backend {
+	protocols := &http.Protocols{}
+	protocols.SetUnencryptedHTTP2(true)
+
 	return &httpBackend{
 		addr: addr,
 		client: &http.Client{
-			Transport: &http.Transport{},
+			Transport: &http.Transport{
+				ForceAttemptHTTP2: true,
+				Protocols:         protocols,
+			},
 		},
 	}
 }

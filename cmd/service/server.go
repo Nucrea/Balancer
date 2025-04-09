@@ -1,4 +1,4 @@
-package service
+package main
 
 import (
 	"context"
@@ -22,15 +22,24 @@ type Server struct {
 }
 
 func (s *Server) Run(ctx context.Context, port uint16) {
+	protocols := &http.Protocols{}
+	protocols.SetUnencryptedHTTP2(true)
+
 	addr := fmt.Sprintf(":%d", port)
 	log.Printf("listening on %s\n", addr)
-	http.ListenAndServe(addr, s.router())
+
+	srv := http.Server{
+		Addr:      addr,
+		Handler:   s.router(),
+		Protocols: protocols,
+	}
+	srv.ListenAndServe()
 }
 
 func (s *Server) router() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/health", s.getHealth)
-	mux.HandleFunc("/count", s.getCount)
+	mux.HandleFunc("GET /health", s.getHealth)
+	mux.HandleFunc("GET /count", s.getCount)
 	return mux
 }
 

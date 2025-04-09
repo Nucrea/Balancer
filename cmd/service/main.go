@@ -1,7 +1,6 @@
 package main
 
 import (
-	"balancer/internal/service"
 	"context"
 	"log"
 	"math"
@@ -27,6 +26,6 @@ func main() {
 		log.Fatal("wrong port env var")
 	}
 
-	srv := service.NewServer()
+	srv := NewServer()
 	srv.Run(context.Background(), uint16(port))
 }

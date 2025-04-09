@@ -47,6 +47,6 @@ func main() {
 	}
 	logger := zerolog.New(writer).With().Timestamp().Logger()
 
-	srv := NewServer(logger, addrs...)
+	srv := NewServer(logger, addrs...) //NewServer(logger, addrs...)
 	srv.Run(context.Background(), uint16(port))
 }
