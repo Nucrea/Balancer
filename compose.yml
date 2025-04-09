@@ -1,0 +1,82 @@
+x-service: &service
+  build:
+    context: .
+    dockerfile: service.Dockerfile
+  depends_on:
+    - balancer
+    
+volumes:
+  balancer-volume:
+
+services:
+  service-1: *service
+  service-2: *service
+  service-3: *service
+
+  balancer:
+    build:
+      context: .
+      dockerfile: balancer.Dockerfile
+    healthcheck:
+      test: 'wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+    ports:
+      - 8088:8080
+    volumes:
+      - balancer-volume:/var/log
+    environment:
+      LOGFILE: /var/log/balancer.log
+      ADDRS: 'service-1:8081,service-2:8081,service-3:8081'
+
+  locust:
+    image: locustio/locust:2.33.2
+    volumes:
+      - ./locust/health.py:/locust/health.py
+      - ./locust/counter.py:/locust/counter.py
+    command: ["-f", "/locust", "--class-picker", "--host", "http://balancer:8080"]
+    ports:
+      - 8089:8089
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    depends_on:
+      - balancer
+    command: ["--config.file=/etc/prometheus.yml"]
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus.yml
+
+  loki:
+    image: grafana/loki:3.0.0
+    depends_on:
+      - balancer
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - 3100:3100
+
+  alloy:
+    image: grafana/alloy:v1.7.1
+    depends_on:
+      loki:
+        condition: service_started
+      balancer:
+        condition: service_healthy
+    volumes:
+      - ./deploy/config.alloy:/etc/alloy/config.alloy
+      - balancer-volume:/var/log:ro
+    command: 'run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy'
+  
+  grafana:
+    image: grafana/grafana:11.0.0
+    ports:
+      - "8090:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Editor
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/dashboard.json
+    volumes:
+      - ./deploy/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./deploy/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yaml:ro
+      - ./deploy/dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
