@@ -3,10 +3,13 @@ package backend
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 )
+
+var _ Backend = (*httpBackend)(nil)
 
 func NewHttpBackend(addr string) Backend {
 	protocols := &http.Protocols{}
@@ -26,6 +29,22 @@ func NewHttpBackend(addr string) Backend {
 type httpBackend struct {
 	addr   string
 	client *http.Client
+}
+
+func (b *httpBackend) Health(ctx context.Context) error {
+	url := fmt.Sprintf("%s/health", b.addr)
+	httpReq, err := http.NewRequestWithContext(ctx, "get", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := b.client.Do(httpReq)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("health request status not 200")
+	}
+	return nil
 }
 
 func (b *httpBackend) Invoke(ctx context.Context, req Request) (Response, error) {

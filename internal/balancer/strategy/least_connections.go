@@ -4,6 +4,7 @@ import (
 	"balancer/internal/balancer/backend"
 	"math"
 	"sync/atomic"
+	"time"
 )
 
 func NewLeastConnections(items []backend.Item) Strategy {
@@ -25,9 +26,15 @@ func (l *leastConnections) Next() backend.Item {
 		index := l.index.Add(1) % uint64(len(l.items))
 		item := l.items[index]
 
-		if status, _ := item.Status(); status == backend.StatusAlive {
+		status, updateTime := item.Status()
+		if status == backend.StatusUnalive && time.Since(updateTime) > 5*time.Second {
+			item.SetStatus(backend.StatusChecking)
+			return item
+		}
+		if status == backend.StatusChecking || status == backend.StatusUnalive {
 			continue
 		}
+
 		if conns := item.Connections(); conns < minConns {
 			result = item
 			minConns = conns

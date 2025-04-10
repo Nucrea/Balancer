@@ -15,6 +15,7 @@ type Item interface {
 
 type Backend interface {
 	Invoke(ctx context.Context, req Request) (Response, error)
+	Health(ctx context.Context) error
 }
 
 type Request struct {

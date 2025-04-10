@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 1,
   "links": [],
   "panels": [
     {
@@ -561,7 +561,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 16,
+        "w": 18,
         "x": 6,
         "y": 9
       },
@@ -571,7 +571,7 @@
           "calcs": [],
           "displayMode": "list",
           "placement": "right",
-          "showLegend": false
+          "showLegend": true
         },
         "tooltip": {
           "maxHeight": 600,
@@ -589,7 +589,7 @@
           "editorMode": "code",
           "expr": "rate(balancer_requests[$__interval])",
           "instant": false,
-          "legendFormat": "__auto",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -790,6 +790,6 @@
   "timezone": "browser",
   "title": "Balancer Copy",
   "uid": "ceibwli2y2xhce",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }
