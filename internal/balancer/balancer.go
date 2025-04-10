@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -90,6 +91,8 @@ func (b *Balancer) Routine(ctx context.Context) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
+	unhealty := []backend.Item{}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -98,21 +101,35 @@ func (b *Balancer) Routine(ctx context.Context) {
 		case <-ticker.C:
 		}
 
-		// checkItems := []backend.Item{}
-		// for _, item := range b.items {
-		// 	status, updateTime := item.Status()
-		// 	if status == backend.StatusInalive {
-		// 		continue
-		// 	}
-		// 	if time.Since(updateTime) < 5*time.Second {
-		// 		continue
-		// 	}
+		unhealty = unhealty[:0]
+		for _, item := range b.items {
+			status, _ := item.Status()
+			if status != backend.StatusUnalive {
+				continue
+			}
 
-		// 	checkItems = append(checkItems, item)
-		// 	b.logger.Info().Msgf("add check item (%s)", item.Id())
-		// }
+			ctx, _ := context.WithTimeout(ctx, 100*time.Millisecond)
+			if err := item.Health(ctx); err != nil {
+				unhealty = append(unhealty, item)
+				continue
+			}
 
-		// ticker.Reset(time.Second)
+			item.SetStatus(backend.StatusAlive)
+			b.logger.Info().Msgf("now healthy (%s)", item.Id())
+		}
+
+		if len(unhealty) > 0 {
+			sb := strings.Builder{}
+			sb.WriteString("unhealthy nodes: [")
+			for _, item := range unhealty {
+				sb.WriteString(item.Id())
+				sb.WriteRune(' ')
+			}
+			sb.WriteRune(']')
+			b.logger.Warn().Msg(sb.String())
+		}
+
+		ticker.Reset(time.Second)
 	}
 }
 

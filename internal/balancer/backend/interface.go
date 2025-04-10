@@ -6,11 +6,11 @@ import (
 )
 
 type Item interface {
+	Backend
 	Id() string
 	SetStatus(status Status)
 	Status() (Status, time.Time)
 	Connections() int
-	Invoke(ctx context.Context, req Request) (Response, error)
 }
 
 type Backend interface {

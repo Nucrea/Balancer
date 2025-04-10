@@ -15,6 +15,10 @@ func NewHttpBackend(addr string) Backend {
 	protocols := &http.Protocols{}
 	protocols.SetUnencryptedHTTP2(true)
 
+	if !strings.HasPrefix(addr, "http") {
+		addr = "http://" + addr
+	}
+
 	return &httpBackend{
 		addr: addr,
 		client: &http.Client{
@@ -33,7 +37,7 @@ type httpBackend struct {
 
 func (b *httpBackend) Health(ctx context.Context) error {
 	url := fmt.Sprintf("%s/health", b.addr)
-	httpReq, err := http.NewRequestWithContext(ctx, "get", url, nil)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
@@ -49,10 +53,6 @@ func (b *httpBackend) Health(ctx context.Context) error {
 
 func (b *httpBackend) Invoke(ctx context.Context, req Request) (Response, error) {
 	sb := strings.Builder{}
-
-	if !strings.HasPrefix(b.addr, "http") {
-		sb.WriteString("http://")
-	}
 	sb.WriteString(b.addr)
 	if req.Path[0] != '/' {
 		sb.WriteRune('/')

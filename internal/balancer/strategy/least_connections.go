@@ -27,7 +27,7 @@ func (l *leastConnections) Next() backend.Item {
 		item := l.items[index]
 
 		status, updateTime := item.Status()
-		if status == backend.StatusUnalive && time.Since(updateTime) > 5*time.Second {
+		if status == backend.StatusUnalive && time.Since(updateTime) > 10*time.Second {
 			item.SetStatus(backend.StatusChecking)
 			return item
 		}

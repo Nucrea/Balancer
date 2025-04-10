@@ -24,7 +24,7 @@ func (r *roundRobin) Next() backend.Item {
 		if status == backend.StatusAlive {
 			return item
 		}
-		if status == backend.StatusUnalive && time.Since(updateTime) > 5*time.Second {
+		if status == backend.StatusUnalive && time.Since(updateTime) > 10*time.Second {
 			item.SetStatus(backend.StatusChecking)
 			return item
 		}

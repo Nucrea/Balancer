@@ -79,6 +79,10 @@ func (b *item) Connections() int {
 	return int(b.connections)
 }
 
+func (b *item) Health(ctx context.Context) error {
+	return b.backend.Health(ctx)
+}
+
 func (b *item) Invoke(ctx context.Context, req Request) (Response, error) {
 	b.requestsCounter.Inc()
 	atomic.AddInt64(&b.connections, 1)
